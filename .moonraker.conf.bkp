@@ -76,9 +76,15 @@ primary_branch = main
 managed_services = sonar
 install_script = tools/install.sh
 
+[update_manager katapult]
+type = git_repo
+path = ~/katapult
+origin = https://github.com/Arksine/katapult
+is_system_service = False
+
 [update_manager z_calibration]
 type = git_repo
-path = /home/pi/klipper_z_calibration
+path = ~/klipper_z_calibration
 origin = https://github.com/protoloft/klipper_z_calibration.git
 managed_services = klipper
 
