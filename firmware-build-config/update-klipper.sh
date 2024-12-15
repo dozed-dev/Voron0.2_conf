@@ -4,6 +4,7 @@ set -eu
 declare -A boards=(
   ["klipper-skr-mini-v2.config"]="stm32f103xe_36FFD6054246303633571157-if00"
   ["klipper-sht36.config"]="stm32f072xb_450049001057425835303220-if00"
+  ["klipper-v0display.config"]="stm32f042x6_23000C001843304754393320-if00"
 )
 
 klipper_path="$HOME/klipper"
@@ -26,10 +27,13 @@ function flash_board() {
   make --directory "$klipper_path" flash FLASH_DEVICE="$1"
 }
 
+configs_dir="$(realpath $(dirname "$0"))"
+
 for config_name in "${!boards[@]}"; do
   serial_path="/dev/serial/by-id/usb-Klipper_${boards[$config_name]}"
   serial_katapult_path="/dev/serial/by-id/usb-katapult_${boards[$config_name]}"
-  config_path="$(dirname "$0")/$config_name"
+  config_path="$configs_dir/$config_name"
+  echo $config_path
   if ! [[ ( -e "$serial_path" || -e "$serial_katapult_path") &&  -e "$config_path" ]]; then
     echo "Serial path or config path were not found! Skipping ${config_name}..."
     continue
