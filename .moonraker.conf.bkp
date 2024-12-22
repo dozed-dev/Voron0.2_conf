@@ -58,9 +58,6 @@ managed_services = klipper moonraker
 [timelapse]
 output_path = ~/timelapse/
 ffmpeg_binary_path = /usr/bin/ffmpeg
-parkhead = True
-parkpos = back_right
-park_travel_speed = 700
 
 [update_manager crowsnest]
 type = git_repo
