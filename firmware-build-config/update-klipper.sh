@@ -41,6 +41,7 @@ a.write_config(filename=sys.argv[2],save_old=True)
 }
 
 configs_dir="$(realpath $(dirname "$0"))"
+sudo systemctl stop klipper
 
 for config_name in "${!boards[@]}"; do
   serial_path="/dev/serial/by-id/usb-Klipper_${boards[$config_name]}"
@@ -70,3 +71,4 @@ for config_name in "${!boards[@]}"; do
   flash_board "$serial_katapult_path"
   echo "Updated $serial_path with config $config_path!"
 done
+sudo systemctl start klipper
