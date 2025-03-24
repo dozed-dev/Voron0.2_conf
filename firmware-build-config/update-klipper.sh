@@ -4,10 +4,15 @@ set -eu
 declare -A boards=(
   #["klipper-skr-mini-v2.config"]="stm32f103xe_36FFD6054246303633571157-if00"
   #["klipper-sht36.config"]="stm32f072xb_450049001057425835303220-if00"
-  ["klipper-v0display.config"]="stm32f042x6_23000C001843304754393320-if00"
+  ["klipper-v0display.config"]="USB stm32f042x6_23000C001843304754393320-if00"
 )
 
+usb_prefix="/dev/serial/by-id/usb-"
+can_dev="can0"
+
 klipper_path="$HOME/klipper"
+katapult_path="$HOME/katapult"
+flashtool="python3 ${katapult_path}/scripts/flashtool.py"
 make_flags=("-j4")
 
 function build_klipper() {
@@ -19,10 +24,6 @@ function build_klipper() {
 
 function enter_bootloader() {
   PYTHONPATH="$klipper_path/scripts" python3 -c "import flash_usb as u; u.enter_bootloader('$1')"
-}
-
-function make_klipper() {
-  make --directory "$klipper_path"
 }
 
 function flash_board() {
@@ -47,32 +48,53 @@ configs_dir="$(realpath "$(dirname "$0")")"
 sudo systemctl stop klipper
 
 for config_name in "${!boards[@]}"; do
-  serial_path="/dev/serial/by-id/usb-Klipper_${boards[$config_name]}"
-  serial_katapult_path="/dev/serial/by-id/usb-katapult_${boards[$config_name]}"
+  conf="${boards[$config_name]}"
+  conn_type="${conf%% *}" # first word in string
+  conn_val="${conf##* }" # last word in string
+
   config_path="$configs_dir/$config_name"
+  if ! [[ -e "$config_path" ]]; then
+    echo "Config was not found! Skipping ${config_name}..."
+    continue
+  fi
+
+  if [ "${conn_type,,}" = 'usb' ]; then
+    serial_path="${usb_prefix}Klipper_${conn_val}"
+    serial_katapult_path="${usb_prefix}katapult_${conn_val}"
+
+    flash_args="-d ${serial_katapult_path}"
+    if [ -e "$serial_katapult_path" ]; then
+      echo "Already in bootloader"
+    elif [ -e "$serial_path" ]; then
+      echo "Entering bootloader..."
+      enter_bootloader "$serial_path"
+      $flashtool $flash_args --request-bootloader
+      flash_args="-d ${serial_path}"
+      sleep 1
+    else
+      echo "Serial connection path was not found! Skipping ${config_name}..."
+      continue
+    fi
+  elif [ "${conn_type,,}" = 'can' ]; then
+    flash_args="-i ${can_dev} -u ${conn_val}"
+    err=0
+    $flashtool $flash_args --request-bootloader || err=$?
+    $flashtool $flash_args --status || err=$?
+    if [ $err -ne 0 ]; then
+      echo "CAN bus error. Skipping ${config_name}..."
+      continue
+    fi
+  else
+    echo "Invalid connection type \"${conn_type,,}\" for ${config_name}! Skipping ${config_name}..."
+    continue
+  fi
+
   echo "Update board config: $config_path"
   update_config "$config_path"
-  if ! [[ ( -e "$serial_path" || -e "$serial_katapult_path") &&  -e "$config_path" ]]; then
-    echo "Serial path or config path were not found! Skipping ${config_name}..."
-    continue
-  fi
   echo "Build Klipper"
   build_klipper "$config_path"
-
-  if [ -e "$serial_katapult_path" ]; then
-    echo "Already in bootloader"
-  elif [ -e "$serial_path" ]; then
-    echo "Entering bootloader"
-    enter_bootloader "$serial_path"
-    sleep 1
-  else
-    echo "Serial path for board ${config_name} was not found! Skipping..."
-    continue
-  fi
-    
-  make_klipper
   echo "Flash Klipper"
-  flash_board "$serial_katapult_path"
-  echo "Updated $serial_path with config $config_path!"
+  $flashtool $flash_args -f "$klipper_path/out/klipper.bin" \
+  && echo "Updated $serial_path with config $config_path!"
 done
 sudo systemctl start klipper
