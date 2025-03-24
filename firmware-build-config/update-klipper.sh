@@ -65,11 +65,13 @@ for config_name in "${!boards[@]}"; do
     flash_args="-d ${serial_path}"
     if [ -e "$serial_katapult_path" ]; then
       echo "Already in bootloader"
+      flash_args="-d ${serial_katapult_path}"
     elif [ -e "$serial_path" ]; then
       echo "Entering bootloader..."
       enter_bootloader "$serial_path"
       err=0
       $flashtool $flash_args --request-bootloader || err=$?
+      flash_args="-d ${serial_katapult_path}"
       $flashtool $flash_args --status || err=$?
       if [ $err -ne 0 ]; then
         echo "CAN bus error. Skipping ${config_name}..."
@@ -79,7 +81,6 @@ for config_name in "${!boards[@]}"; do
       echo "Serial connection path was not found! Skipping ${config_name}..."
       continue
     fi
-    flash_args="-d ${serial_katapult_path}"
   elif [ "${conn_type,,}" = 'can' ]; then
     flash_args="-i ${can_dev} -u ${conn_val}"
     err=0
