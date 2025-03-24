@@ -66,10 +66,11 @@ for config_name in "${!boards[@]}"; do
       echo "Entering bootloader..."
       err=0
       $flashtool $flash_args --request-bootloader || err=$?
+      sleep 1
       flash_args="-d ${serial_katapult_path}"
       $flashtool $flash_args --status || err=$?
       if [ $err -ne 0 ]; then
-        echo "CAN bus error. Skipping ${config_name}..."
+        echo "Error. Skipping ${config_name}..."
         continue
       fi
     else
@@ -80,6 +81,7 @@ for config_name in "${!boards[@]}"; do
     flash_args="-i ${can_dev} -u ${conn_val}"
     err=0
     $flashtool $flash_args --request-bootloader || err=$?
+    sleep 1
     $flashtool $flash_args --status || err=$?
     if [ $err -ne 0 ]; then
       echo "CAN bus error. Skipping ${config_name}..."
@@ -89,7 +91,6 @@ for config_name in "${!boards[@]}"; do
     echo "Invalid connection type \"${conn_type,,}\" for ${config_name}! Skipping ${config_name}..."
     continue
   fi
-  sleep 1
 
   echo "Update board config: $config_path"
   update_config "$config_path"
