@@ -2,8 +2,8 @@
 set -eu
 
 declare -A boards=(
-  ["klipper-skr-mini-v2.config"]="stm32f103xe_36FFD6054246303633571157-if00"
-  ["klipper-sht36.config"]="stm32f072xb_450049001057425835303220-if00"
+  #["klipper-skr-mini-v2.config"]="stm32f103xe_36FFD6054246303633571157-if00"
+  #["klipper-sht36.config"]="stm32f072xb_450049001057425835303220-if00"
   ["klipper-v0display.config"]="stm32f042x6_23000C001843304754393320-if00"
 )
 
@@ -18,14 +18,17 @@ function build_klipper() {
 }
 
 function enter_bootloader() {
-    PYTHONPATH="$klipper_path/scripts" python3 -c "import flash_usb as u; u.enter_bootloader('$1')"
+  PYTHONPATH="$klipper_path/scripts" python3 -c "import flash_usb as u; u.enter_bootloader('$1')"
+}
+
+function make_klipper() {
+  make --directory "$klipper_path"
 }
 
 function flash_board() {
-  # Enter bootloader
-  # Flash
-  make --directory "$klipper_path" flash FLASH_DEVICE="$1"
+  echo UNIMPLEMENTED
 }
+# flash FLASH_DEVICE="$1"
 
 function update_config() {
   python_code="
@@ -36,11 +39,11 @@ a.load_config(filename=sys.argv[2],replace=False)
 a.write_config(filename=sys.argv[2],save_old=True)
 "
   pushd "$klipper_path"
-  PYTHONPATH=lib/kconfiglib python3 -c "$python_code" src/Kconfig $1
+  PYTHONPATH=lib/kconfiglib python3 -c "$python_code" src/Kconfig "$1"
   popd
 }
 
-configs_dir="$(realpath $(dirname "$0"))"
+configs_dir="$(realpath "$(dirname "$0")")"
 sudo systemctl stop klipper
 
 for config_name in "${!boards[@]}"; do
@@ -67,6 +70,7 @@ for config_name in "${!boards[@]}"; do
     continue
   fi
     
+  make_klipper
   echo "Flash Klipper"
   flash_board "$serial_katapult_path"
   echo "Updated $serial_path with config $config_path!"
