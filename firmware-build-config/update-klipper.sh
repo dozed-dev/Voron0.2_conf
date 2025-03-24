@@ -62,19 +62,24 @@ for config_name in "${!boards[@]}"; do
     serial_path="${usb_prefix}Klipper_${conn_val}"
     serial_katapult_path="${usb_prefix}katapult_${conn_val}"
 
-    flash_args="-d ${serial_katapult_path}"
+    flash_args="-d ${serial_path}"
     if [ -e "$serial_katapult_path" ]; then
       echo "Already in bootloader"
     elif [ -e "$serial_path" ]; then
       echo "Entering bootloader..."
       enter_bootloader "$serial_path"
-      $flashtool $flash_args --request-bootloader
-      flash_args="-d ${serial_path}"
-      sleep 1
+      err=0
+      $flashtool $flash_args --request-bootloader || err=$?
+      $flashtool $flash_args --status || err=$?
+      if [ $err -ne 0 ]; then
+        echo "CAN bus error. Skipping ${config_name}..."
+        continue
+      fi
     else
       echo "Serial connection path was not found! Skipping ${config_name}..."
       continue
     fi
+    flash_args="-d ${serial_katapult_path}"
   elif [ "${conn_type,,}" = 'can' ]; then
     flash_args="-i ${can_dev} -u ${conn_val}"
     err=0
@@ -88,6 +93,7 @@ for config_name in "${!boards[@]}"; do
     echo "Invalid connection type \"${conn_type,,}\" for ${config_name}! Skipping ${config_name}..."
     continue
   fi
+  sleep 1
 
   echo "Update board config: $config_path"
   update_config "$config_path"
