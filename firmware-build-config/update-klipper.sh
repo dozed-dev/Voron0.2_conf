@@ -22,10 +22,6 @@ function build_klipper() {
   popd
 }
 
-function enter_bootloader() {
-  PYTHONPATH="$klipper_path/scripts" python3 -c "import flash_usb as u; u.enter_bootloader('$1')"
-}
-
 function flash_board() {
   echo UNIMPLEMENTED
 }
@@ -68,7 +64,6 @@ for config_name in "${!boards[@]}"; do
       flash_args="-d ${serial_katapult_path}"
     elif [ -e "$serial_path" ]; then
       echo "Entering bootloader..."
-      enter_bootloader "$serial_path"
       err=0
       $flashtool $flash_args --request-bootloader || err=$?
       flash_args="-d ${serial_katapult_path}"
