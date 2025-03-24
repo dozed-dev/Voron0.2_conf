@@ -2,8 +2,8 @@
 set -eu
 
 declare -A boards=(
-  #["klipper-skr-mini-v2.config"]="stm32f103xe_36FFD6054246303633571157-if00"
-  #["klipper-sht36.config"]="stm32f072xb_450049001057425835303220-if00"
+  ["klipper-skr-mini-v2.config"]="USB stm32f103xe_36FFD6054246303633571157-if00"
+  ["klipper-sht36.config"]="USB stm32f072xb_450049001057425835303220-if00"
   ["klipper-v0display.config"]="USB stm32f042x6_23000C001843304754393320-if00"
 )
 
